@@ -19,7 +19,7 @@
 
 
 # tle_parser.py: читает tle_raw.txt, возвращает список TLE-записей с именами спутников
-# tle_to_db.py: вставляет новые записи в таблицу satellites
+
 # calculator.py: выполняет расчеты (используя pyorbital, sgp4, skyfield и др.)
 # processor.py: получает спутники из БД, производит расчеты, сохраняет результаты в таблицу calculations
 # exporter.py: экспортирует расчеты в Excel-файл

@@ -1,31 +1,58 @@
 # Расчет азимута, угла места и пр. на основе epthem
+from datetime import datetime, timedelta, timezone
 import ephem
 import math
-from datetime import datetime, timedelta, timezone
+
+
+def parse_tle_epoch(epoch_str):
+    year = int(epoch_str[:2])
+    if year < 57:
+        year += 2000
+    else:
+        year += 1900
+
+    day_of_year = float(epoch_str[2:])
+    day_int = int(day_of_year)
+    day_frac = day_of_year - day_int
+
+    base_date = datetime(year, 1, 1, tzinfo=timezone.utc) + timedelta(days=day_int - 1)
+    seconds_in_day = 86400
+    time_part = timedelta(seconds=day_frac * seconds_in_day)
+
+    return base_date + time_part
 
 
 def calculate_observation(name, line1, line2, observer_lat, observer_lon):
     now_utc = datetime.now(timezone.utc)
     tle_obj = ephem.readtle(name, line1, line2)
-    tle_obj.compute()
 
-    # географическое положение спутника
+    # субспутниковая точка
+    tle_obj.compute(now_utc)
     lat = float(tle_obj.sublat) * 180.0 / math.pi
     lon = float(tle_obj.sublong) * 180.0 / math.pi
 
-    # параметры из TLE
-    inc = float(line2[8:16])
+    # inclination
+    inc = float(line2.split()[2])
+
+    # NORAD
     norad = int(line2[2:7])
     cospar = line1[9:16]
-    epoch_days = float(line1[18:32])
-    tle_created_at = datetime(now_utc.year, 1, 1) + timedelta(days=epoch_days)
 
-    # расчет высоты (по орбитальному периоду)
+    # корректное определение эпохи TLE
+    year = int(line1[18:20])
+    if year < 57:
+        year += 2000
+    else:
+        year += 1900
+    epoch_str = line1[18:32]
+    tle_created_at = parse_tle_epoch(epoch_str)
+
+    # высота по периоду
     Gm = 3.986004415e14
     T = 86400 / float(line2.split()[7])
     alt_km = ((Gm * (T / (2 * math.pi)) ** 2) ** (1 / 3) - 6378137) / 1000
 
-    # положение спутника с точки наблюдения
+    # расчет азимута и угла места
     observer = ephem.Observer()
     observer.lat = str(observer_lat)
     observer.lon = str(observer_lon)
@@ -50,4 +77,6 @@ def calculate_observation(name, line1, line2, observer_lat, observer_lon):
         'azimuth': az,
         'elevation': el,
     }
+
+
 print(f'{__name__} completed')
