@@ -31,7 +31,7 @@ def export_to_excel(output_file_path: str):
                 'Наклонение': sat.inclination,
                 'Высота': calc.altitude,
                 'Дата создания TLE': sat.tle_created_at,
-                'Дата рассчетов': calc.calculation_time,
+                'Дата расчетов': calc.calculation_time,
             }
 
     session.close()
