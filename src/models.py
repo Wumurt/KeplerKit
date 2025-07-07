@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, Text, Float, Double, TIMESTAMP, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -14,6 +15,8 @@ class Satellite(Base):
     tle1 = Column(Text, nullable=False)
     tle2 = Column(Text, nullable=False)
     tle_created_at = Column(TIMESTAMP, nullable=False)
+    # добавляем связь между таблицами в алхимии
+    calculations = relationship("Calculation", back_populates="satellite", cascade="all, delete")
 
 
 class Calculation(Base):
@@ -27,5 +30,7 @@ class Calculation(Base):
     azimuth = Column(Double)
     elevation = Column(Double)
     calculation_time = Column(TIMESTAMP, nullable=False)
+    # добавляем связь между таблицами в алхимии
+    satellite = relationship("Satellite", back_populates="calculations")
 
 print(f'{__name__} completed')
