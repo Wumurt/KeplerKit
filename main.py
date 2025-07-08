@@ -39,7 +39,7 @@ def main():
     url = 'https://celestrak.org/NORAD/elements/geo.txt'
 
     # парсим и создаем файл с сырыми tle
-    parser(url, name_output_tle_file)
+    parser(url, name_output_tle_file, missing_ids_file='data/missing_norad_ids.txt')
 
     # считываем файл tle в список
     tle_list = read_tle_file(name_output_tle_file)
