@@ -55,11 +55,10 @@ def parser(page_url: str, name_output_file: str, missing_ids_file: str | None = 
         missing_tles = []  # собираем в память строки для дозаписи
         for norad_id in missing_ids:
             if int(norad_id) in existing_ids:
-                print(f"[SKIP] NORAD {norad_id} уже есть в файле — пропущен.")
+                print(f"[SKIP] NORAD {norad_id} уже есть в файле {name_output_file} — пропускаем")
                 continue
             try:
                 name, tle = get_tle_from_n2yo(norad_id)
-                # f.write(f"{name}\n{tle}\n")
                 missing_tles.append(f"{name}\n{tle}\n")
                 print(f"[+] Добавлен NORAD {norad_id} ({name}) с N2YO")
             except Exception as e:
