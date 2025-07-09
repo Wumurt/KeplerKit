@@ -5,38 +5,67 @@ from bs4 import BeautifulSoup
 from src.config import N2YO_API_KEY
 
 
-def get_tle_from_n2yo(norad_id):
+def get_tle_from_n2yo(norad_id: str) -> tuple[str, str]:
     url = f"https://api.n2yo.com/rest/v1/satellite/tle/{norad_id}&apiKey={N2YO_API_KEY}"
-
     response = requests.get(url)
     if response.status_code != 200:
-        raise Exception('Failed to get data from n2yo.com')
+        raise Exception(f'Не удалось получить TLE с N2YO для {norad_id}')
 
     data = response.json()
     name = data['info']['satname']
-    tle = data['tle'].replace('\r\n', '\n')
+    tle = data['tle'].replace('\r\n', '\n')  # нормализуем перевод строки
     return name, tle
 
 
-def parser(page_url, name_output_file, missing_ids_file=None):
-    # 1. Парсим данные с celestrak.org
+def extract_norad_ids_from_tle(lines: list[str]) -> set[int]:
+    ids = set()
+    for line in lines:
+        if line.startswith("2 "):  # строка 2 в TLE
+            try:
+                norad_id = int(line[2:7])
+                ids.add(norad_id)
+            except ValueError:
+                continue
+    return ids
+
+
+def parser(page_url: str, name_output_file: str, missing_ids_file: str | None = None):
+    print(f"[INFO] Загружаем TLE с {page_url}")
     r = requests.get(page_url)
-    print(f'URL= {page_url} STATUS={r.status_code}')
+    print(f'[DEBUG] Ответ Celestrak: STATUS={r.status_code}')
     html = BeautifulSoup(r.content, 'html.parser')
 
-    # записываем результат в файл
+    # 1. Сохраняем TLE из Celestrak
+    tle_lines = str(html).split('\n')
     with open(name_output_file, 'w') as f:
-        f.writelines(str(html).split('\n'))
+        f.writelines(tle_lines)
 
-    print(name_output_file, 'from celestrak saved')
+    print(f'[INFO] {len(tle_lines) // 3} TLE с Celestrak сохранены в {name_output_file}')
 
-    # 2. Добавляем отсутствующие спутники из missing_ids_file для поиска на n2yo
+    # 2. Загружаем NORAD ID из уже записанных TLE
+    existing_ids = extract_norad_ids_from_tle(tle_lines)
+    print(f"[DEBUG] Извлечено {len(existing_ids)} NORAD ID из Celestrak")
+
+    # 3. Если есть список пропущенных — проверяем и дополняем
     if missing_ids_file:
         with open(missing_ids_file, 'r') as rfile:
-            ids = [line.split()[0] for line in rfile.read().splitlines()]
-            print(f'Открыты {ids=} для обработки')
-            for n_id in ids:
-                name, tle = get_tle_from_n2yo(n_id)
-                with open(name_output_file, 'a') as f:
-                    f.write(f"{name}\n{tle}\n")
-                print(f"[+] Добавлен NORAD {n_id} ({name}) из N2YO в {name_output_file}")
+            missing_ids = [line.split()[0] for line in rfile.read().splitlines()]
+            print(f'[DEBUG] Считано id_norad {len(missing_ids)} {missing_ids=}')
+
+        missing_tles = []  # собираем в память строки для дозаписи
+        for norad_id in missing_ids:
+            if int(norad_id) in existing_ids:
+                print(f"[SKIP] NORAD {norad_id} уже есть в файле — пропущен.")
+                continue
+            try:
+                name, tle = get_tle_from_n2yo(norad_id)
+                # f.write(f"{name}\n{tle}\n")
+                missing_tles.append(f"{name}\n{tle}\n")
+                print(f"[+] Добавлен NORAD {norad_id} ({name}) с N2YO")
+            except Exception as e:
+                print(f"[ERROR] NORAD {norad_id} — ошибка при получении с N2YO: {e}")
+        # дозаписываем собранные данные
+        if missing_tles:
+            with open(name_output_file, 'a') as f:
+                f.writelines(missing_tles)
+            print(f"[INFO] Записано {len(missing_tles)} ИСЗ с N2YO в {name_output_file}")
