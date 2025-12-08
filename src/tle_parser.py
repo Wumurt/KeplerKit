@@ -7,9 +7,10 @@ from src.config import N2YO_API_KEY
 
 def get_tle_from_n2yo(norad_id: str) -> tuple[str, str]:
     url = f"https://api.n2yo.com/rest/v1/satellite/tle/{norad_id}&apiKey={N2YO_API_KEY}"
-    response = requests.get(url)
+    response = requests.get(url, timeout=5)
     if response.status_code != 200:
-        raise Exception(f'Не удалось получить TLE с N2YO для {norad_id}')
+        print(f'{response.status_code=}')
+        raise Exception(f'Не удалось получить TLE с N2YO для {norad_id}, {response.status_code=}')
 
     data = response.json()
     name = data['info']['satname']
@@ -49,7 +50,7 @@ def parser(page_url: str, name_output_file: str, missing_ids_file: str | None = 
     # 3. Если есть список пропущенных — проверяем и дополняем
     if missing_ids_file:
         with open(missing_ids_file, 'r') as rfile:
-            missing_ids = [line.split()[0] for line in rfile.read().splitlines()]
+            missing_ids = [line.split()[0] for line in rfile.read().strip().splitlines()]
             print(f'[DEBUG] Считано id_norad {len(missing_ids)} {missing_ids=}')
 
         missing_tles = []  # собираем в память строки для дозаписи

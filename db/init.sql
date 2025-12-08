@@ -21,14 +21,3 @@ CREATE TABLE calculations (
     elevation DOUBLE PRECISION,
     calculation_time TIMESTAMP NOT NULL
 );
-
-CREATE TABLE calculations (
-    id SERIAL PRIMARY KEY,
-    satellite_id INTEGER REFERENCES satellites(id) ON DELETE CASCADE,
-    latitude DOUBLE PRECISION,
-    longitude DOUBLE PRECISION,
-    altitude DOUBLE PRECISION,
-    azimuth DOUBLE PRECISION,
-    elevation DOUBLE PRECISION,
-    calculation_time TIMESTAMP NOT NULL
-);
