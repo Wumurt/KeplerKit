@@ -1,55 +1,106 @@
 # Обработка TLEs, расчеты с помощью модуля src.calculator, запись в базу данных
-
 from src.database import SessionLocal
 from src.models import Satellite, Calculation
 from src.calculator import calculate_observation
+from sqlalchemy.exc import SQLAlchemyError
 
 
 def process_tle_records(tle_list, observer_lat, observer_lon):
-    session = SessionLocal()
+    with SessionLocal() as session:
+        try:
+            # 1) Загружаем все спутники одной выборкой
+            existing_sats = {sat.norad_id: sat for sat in session.query(Satellite).all()}
 
-    for name, line1, line2 in tle_list:
-        result = calculate_observation(name, line1, line2, observer_lat, observer_lon)
+            new_satellite_rows = []
+            update_satellite_rows = []
+            calculation_rows = []
 
-        # найти или создать спутник по NORAD ID
-        sat = session.query(Satellite).filter_by(norad_id=result['norad_id']).first()
+            # --- 2) Обработка TLE ---
+            for name, line1, line2 in tle_list:
+                result = calculate_observation(name, line1, line2, observer_lat, observer_lon)
 
-        if not sat:
-            sat = Satellite(
-                name=result['name'],
-                norad_id=result['norad_id'],
-                cospar_id=result['cospar_id'],
-                inclination=result['inclination'],
-                tle1=result['tle1'],
-                tle2=result['tle2'],
-                tle_created_at=result['tle_created_at']
-            )
-            session.add(sat)
-            session.flush()  # получить ID нового спутника
-        else:
-            # обновить TLE
-            sat.tle1 = result['tle1']
-            sat.tle2 = result['tle2']
-            sat.tle_created_at = result['tle_created_at']
-            sat.inclination = result['inclination']
-            sat.name = result['name']
-            sat.cospar_id = result['cospar_id']
-            session.flush()
+                norad = result["norad_id"]
+                sat = existing_sats.get(norad)
 
-        # записать результат расчета
-        calc = Calculation(
-            satellite_id=sat.id,
-            calculation_time=result['calculation_time'],
-            latitude=result['latitude'],
-            longitude=result['longitude'],
-            altitude=result['altitude'],
-            azimuth=result['azimuth'],
-            elevation=result['elevation']
-        )
-        session.add(calc)
+                # Новый спутник
+                if sat is None:
+                    new_satellite_rows.append({
+                        "name": result["name"],
+                        "norad_id": result["norad_id"],
+                        "cospar_id": result["cospar_id"],
+                        "inclination": result["inclination"],
+                        "tle1": result["tle1"],
+                        "tle2": result["tle2"],
+                        "tle_created_at": result["tle_created_at"],
+                    })
 
-    session.commit()
-    print(f'Load to DB done')
-    session.close()
-    print('session closed')
-print(f'{__name__} done')
+                # Существующий спутник — обновляем
+                else:
+                    update_satellite_rows.append({
+                        "id": sat.id,
+                        "name": result["name"],
+                        "cospar_id": result["cospar_id"],
+                        "inclination": result["inclination"],
+                        "tle1": result["tle1"],
+                        "tle2": result["tle2"],
+                        "tle_created_at": result["tle_created_at"],
+                    })
+
+                # Записываем расчёт (satellite_id добавим после вставки новых спутников)
+                calculation_rows.append({
+                    "norad_id": norad,
+                    "calculation_time": result["calculation_time"],
+                    "latitude": result["latitude"],
+                    "longitude": result["longitude"],
+                    "altitude": result["altitude"],
+                    "azimuth": result["azimuth"],
+                    "elevation": result["elevation"],
+                })
+
+            # --- 3) Вставка новых спутников ---
+            if new_satellite_rows:
+                session.bulk_insert_mappings(Satellite, new_satellite_rows)
+                session.flush()
+
+                # Получаем вставленные строки c id
+                inserted = session.query(Satellite).filter(
+                    Satellite.norad_id.in_([row["norad_id"] for row in new_satellite_rows])).all()
+
+                for sat in inserted:
+                    existing_sats[sat.norad_id] = sat
+
+            # --- 4) Массовое обновление существующих ---
+            if update_satellite_rows:
+                session.bulk_update_mappings(Satellite, update_satellite_rows)
+
+            # --- 5) Заполняем satellite_id и готовим данные для вставки ---
+            calcs = []
+            for row in calculation_rows:
+                sat = existing_sats[row["norad_id"]]
+
+                calcs.append({
+                    "satellite_id": sat.id,
+                    "calculation_time": row["calculation_time"],
+                    "latitude": row["latitude"],
+                    "longitude": row["longitude"],
+                    "altitude": row["altitude"],
+                    "azimuth": row["azimuth"],
+                    "elevation": row["elevation"],
+                })
+
+            # --- 6) Массовая вставка расчетов ---
+            if calcs:
+                session.bulk_insert_mappings(Calculation, calcs)
+
+            session.commit()
+            print("[INFO] Bulk database upload complete")
+
+        except SQLAlchemyError as db_err:
+            session.rollback()
+            print(f"[DB ERROR] {db_err}")
+            raise
+
+        except Exception as e:
+            session.rollback()
+            print(f"[UNEXPECTED ERROR] {e}")
+            raise
