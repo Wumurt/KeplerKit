@@ -11,6 +11,11 @@ DB_CONFIG = {
     'dbname': os.getenv('DB_NAME'),
 }
 
+OBSERVER = {
+    'observer_lat': os.getenv('OBSERVER_LAT'),
+    'observer_lon': os.getenv('OBSERVER_LON')
+}
+
 N2YO_API_KEY = os.getenv('N2YO_API_KEY')
 
 print(f'[INFO] Config successfully loaded!')
