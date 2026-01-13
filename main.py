@@ -3,7 +3,7 @@
 from src.tle_parser import parser
 from src.read_tle import read_tle_file
 from src.processor import process_tle_records
-from src.exporter import export_to_excel, export_to_excel_with_deltas
+from src.exporter import export_to_excel
 from src.config import OBSERVER
 import time
 
@@ -27,16 +27,15 @@ def main():
     process_tle_records(tle_list, OBSERVER['observer_lat'], OBSERVER['observer_lon'])
 
     # время на запись в БД
-    print(f'[INFO] Uploading time: {time.time()-time_start}') # NEON 146.9 sec / local 14.91
+    print(f'[INFO] Uploading time: {time.time()-time_start}') # 4.618911027908325
 
-    # экспорт в Excel последних записей из БД
+    # экспорт в Excel последних записей из БД c дельтой между текущим значением и средним за месяц
     name_output_xlsx_file = name_output_file + '.xlsx'
     export_to_excel(output_file_path=name_output_xlsx_file)
-
-    # экспорт в Excel последних записей из БД с дельтой
-    export_to_excel_with_deltas(name_output_xlsx_file)
+    # время на выгрузку последних записей из БД
+    print(f'[INFO] Downloading time for last rows: {time.time() - time_start}')
 
     # итоговое время работы скрипта
-    print(f'[INFO] Total time: {time.time() - time_start}') # NEON 387.96 sec / local 34.18
+    print(f'[INFO] Total time: {time.time() - time_start}') # 10.535517692565918
 if __name__ == '__main__':
     main()
