@@ -74,8 +74,8 @@ def export_to_excel(output_file_path: str):
                 "Межд.номер": sat.cospar_id,
                 "Наклонение": sat.inclination,
                 "Высота": latest.altitude,
-                "Дата создания TLE": sat.tle_created_at,
-                "Дата расчетов (UTC)": latest.calculation_time,
+                "Дата создания TLE (UTC+3)": sat.tle_created_at + timedelta(hours=3),
+                "Дата расчетов (UTC+3)": latest.calculation_time + timedelta(hours=3),
                 "Средняя долгота за 30 суток": avg_lon,
                 "Отклонение от среднемесячной долготы": delta_from_avg,
             })
