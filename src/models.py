@@ -30,6 +30,7 @@ class Calculation(Base):
     azimuth = Column(Double)
     elevation = Column(Double)
     calculation_time = Column(TIMESTAMP, nullable=False)
+    tle_snapshot = Column(Text, nullable=True) # TLE, использованный при расчёте (tle1 + "\n" + tle2)
     # добавляем связь между таблицами в алхимии
     satellite = relationship("Satellite", back_populates="calculations")
 

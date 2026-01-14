@@ -55,6 +55,7 @@ def process_tle_records(tle_list, observer_lat, observer_lon):
                     "altitude": result["altitude"],
                     "azimuth": result["azimuth"],
                     "elevation": result["elevation"],
+                    "tle_snapshot": f"{result['tle1']}\n{result['tle2']}",
                 })
 
             # --- 3) Вставка новых спутников ---
@@ -86,6 +87,7 @@ def process_tle_records(tle_list, observer_lat, observer_lon):
                     "altitude": row["altitude"],
                     "azimuth": row["azimuth"],
                     "elevation": row["elevation"],
+                    "tle_snapshot": row["tle_snapshot"],
                 })
 
             # --- 6) Массовая вставка расчетов ---

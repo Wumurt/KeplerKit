@@ -19,5 +19,6 @@ CREATE TABLE calculations (
     altitude DOUBLE PRECISION,
     azimuth DOUBLE PRECISION,
     elevation DOUBLE PRECISION,
-    calculation_time TIMESTAMP NOT NULL
+    calculation_time TIMESTAMP NOT NULL,
+    tle_snapshot TEXT
 );
