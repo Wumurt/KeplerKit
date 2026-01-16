@@ -1,4 +1,4 @@
--- добавить таблицу tles?
+-- добавить таблицу tles только при необходимости отслеживания TLE как объектов
 
 CREATE TABLE satellites (
     id SERIAL PRIMARY KEY,
