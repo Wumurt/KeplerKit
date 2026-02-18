@@ -8,6 +8,7 @@ from src.config import N2YO_API_KEY
 def get_tle_from_n2yo(norad_id: str) -> tuple[str, str]:
     url = f"https://api.n2yo.com/rest/v1/satellite/tle/{norad_id}&apiKey={N2YO_API_KEY}"
     response = requests.get(url, timeout=5)
+    print(f'[DEBUG] {response.url}, {response.text}')
     if response.status_code != 200:
         print(f'{response.status_code=}')
         raise Exception(f'Не удалось получить TLE с N2YO для {norad_id}, {response.status_code=}')
