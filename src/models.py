@@ -1,8 +1,11 @@
 from sqlalchemy import Column, Integer, Text, Float, Double, TIMESTAMP, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+import logging
 
+logger = logging.getLogger(__name__)
 Base = declarative_base()
+
 
 class Satellite(Base):
     __tablename__ = 'satellites'
@@ -30,8 +33,10 @@ class Calculation(Base):
     azimuth = Column(Double)
     elevation = Column(Double)
     calculation_time = Column(TIMESTAMP, nullable=False)
-    tle_snapshot = Column(Text, nullable=True) # TLE, использованный при расчёте (tle1 + "\n" + tle2)
+    tle_snapshot = Column(Text, nullable=True)  # TLE, использованный при расчёте (tle1 + "\n" + tle2)
     # добавляем связь между таблицами в алхимии
     satellite = relationship("Satellite", back_populates="calculations")
 
-print(f'{__name__} completed')
+
+# print(f'{__name__} completed')
+logger.info('Models created. %s completed', __name__)

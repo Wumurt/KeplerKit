@@ -3,6 +3,9 @@ from src.database import SessionLocal
 from src.models import Satellite, Calculation
 from src.calculator import calculate_observation
 from sqlalchemy.exc import SQLAlchemyError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def process_tle_records(tle_list, observer_lat, observer_lon):
@@ -95,14 +98,14 @@ def process_tle_records(tle_list, observer_lat, observer_lon):
                 session.bulk_insert_mappings(Calculation, calcs)
 
             session.commit()
-            print("[INFO] Bulk database upload complete")
+            logger.info('Bulk database upload completed')
 
         except SQLAlchemyError as db_err:
             session.rollback()
-            print(f"[DB ERROR] {db_err}")
+            logger.exception("[DB ERROR] %s", db_err)
             raise
 
         except Exception as e:
             session.rollback()
-            print(f"[UNEXPECTED ERROR] {e}")
+            logger.exception("[UNEXPECTED ERROR] %s", e)
             raise

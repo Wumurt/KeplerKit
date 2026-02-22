@@ -1,5 +1,8 @@
 from pathlib import Path
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_output_dir(
@@ -26,6 +29,6 @@ def get_output_dir(
         output_dir = Path(base_dir) / date_str
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    print(f'[INFO] The {output_dir} directory was successfully created.')
+    logger.info('The %s directory was successfully created', output_dir)
 
     return output_dir

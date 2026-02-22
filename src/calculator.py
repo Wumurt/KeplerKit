@@ -2,6 +2,9 @@
 from datetime import datetime, timedelta, timezone
 import ephem
 import math
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def parse_tle_epoch(epoch_str):
@@ -79,4 +82,5 @@ def calculate_observation(name, line1, line2, observer_lat, observer_lon):
     }
 
 
-print(f'{__name__} completed')
+# запись о загрузке модуля
+logger.debug('%s loaded', __name__)

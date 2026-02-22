@@ -5,8 +5,11 @@ import pandas as pd
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from src.database import SessionLocal
-from src.models import Satellite, Calculation
+from src.models import Calculation
 from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def export_to_excel(output_file_path: str):
@@ -82,8 +85,10 @@ def export_to_excel(output_file_path: str):
 
         df = pd.DataFrame(rows).sort_values("Долгота")
         df.to_excel(output_file_path, index=False)
-        print(f'[INFO] EXEL FILE: {output_file_path} created')
+        logger.info('EXEL FILE: %s created', output_file_path)
 
+
+logger.info('Exporter successfully loaded')
 
 if __name__ == "__main__":
     time_start = time.time()

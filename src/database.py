@@ -2,7 +2,10 @@
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.config import DB_CONFIG
+from src.config.settings import DB_CONFIG
+import logging
+
+logger = logging.getLogger(__name__)
 
 if DB_CONFIG['remote_db_url'] is None:
     # Строка подключения к локальному постгресу
@@ -11,7 +14,7 @@ else:
     # Строка подключения к удаленному постгресу
     DATABASE_URL = DB_CONFIG['remote_db_url']
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
 
-print('[INFO] Engine created. Session created')
+logger.info('Engine created. Session created')
