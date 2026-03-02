@@ -4,6 +4,7 @@ import requests
 from bs4 import BeautifulSoup
 from src.config.settings import N2YO_API_KEY
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ def extract_norad_ids_from_tle(lines: list[str]) -> set[int]:
     return ids
 
 
-def parser(page_url: str, name_output_file: str, missing_ids_file: str | None = None):
+def parser(page_url: str, name_output_file: str | Path, missing_ids_file: str | None = None):
     logger.info('Загружаем TLE с %s', page_url)
     r = requests.get(page_url)
     logger.debug('Ответ Celestrak: STATUS=%d', r.status_code)

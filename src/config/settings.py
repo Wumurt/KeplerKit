@@ -29,4 +29,7 @@ OBSERVER = {
 # ключ к n2yo.com
 N2YO_API_KEY = os.getenv('N2YO_API_KEY')
 
+# ссылка на парсинг ГЕО ИСЗ
+GEO_URL = os.getenv('GEO_URL')
+
 logger.info('Settings successfully loaded')

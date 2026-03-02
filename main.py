@@ -1,53 +1,86 @@
 # точка входа
 
+import sys
+from pathlib import Path
+from time import perf_counter
 from src.tle_parser import parser
 from src.read_tle import read_tle_file
 from src.processor import process_tle_records
 from src.exporter import export_to_excel
-from src.config.settings import OBSERVER, LOG_LEVEL
+from src.config.settings import OBSERVER, LOG_LEVEL, GEO_URL
 from src.utils import get_output_dir
-import time
 import logging
 from src.config.logging_config import setup_logging
 
+# инициализация логгера на уровне модуля
+logger = logging.getLogger(__name__)
 
-def main():
-    # стартовое время
-    time_start = time.perf_counter()
 
-    # инициализация логгера проекта
-    setup_logging(LOG_LEVEL)
+def run_pipeline(
+        url: str,
+        output_dir: Path,
+        observer_lat: float,
+        observer_lon: float,
+        out_filename: str = 'active_geo_satellites',
+        missing_ids_file: str | Path = Path('data/missing_norad_ids.txt')
 
-    # инициализация логгера модуля
-    logger = logging.getLogger(__name__)
-    logger.info("Application started")
+) -> None:
+    """Загружает TLE по URL, обрабатывает, заносит данные в БД и экспортирует результаты в Excel."""
 
-    # названия выходных файлов и url'ы
-    url = 'https://celestrak.org/NORAD/elements/geo.txt'
+    logger.info('Pipeline started')
 
-    output_dir = get_output_dir(base_dir='data', nested=True)
-    base_name = output_dir / 'active_geo_satellites'
-    name_output_tle_file = f"{base_name}.txt"
-    name_output_xlsx_file = f"{base_name}.xlsx"
+    # названия выходных файлов
+    base_name = output_dir / out_filename
+    name_output_tle_file = base_name.with_suffix('.txt')
+    name_output_xlsx_file = base_name.with_suffix('.xlsx')
+    logger.debug('base_name: %s, tle: %s, xlsx: %s', base_name, name_output_tle_file, name_output_xlsx_file)
 
-    # парсим и создаем файл с сырыми tle
-    parser(url, name_output_tle_file, missing_ids_file='data/missing_norad_ids.txt')
+    # парсим и создаем текстовый файл с необработанными tle
+    t0 = perf_counter()
+    parser(url, name_output_tle_file, missing_ids_file=missing_ids_file)
+    logger.info("Downloaded and parsed TLE in %fs", perf_counter() - t0)
 
     # считываем файл tle в список
     tle_list = read_tle_file(name_output_tle_file)
 
-    # вызываем функцию для обработки данных
-    process_tle_records(tle_list, OBSERVER['observer_lat'], OBSERVER['observer_lon'])
+    # обновляем данные в таблице БД Satellite, обрабатываем данные, записываем расчеты в Calculations
+    t0 = perf_counter()
+    process_tle_records(tle_list, observer_lat, observer_lon)
+    logger.info("Processed and stored records in %fs", perf_counter() - t0)
 
-    # время на запись в БД
-    logger.info('Uploading time: %f', time.perf_counter() - time_start)  # 48.72
-
-    # экспорт в Excel последних записей из БД c дельтой между текущим значением и средним за месяц
+    # экспорт в Excel последних записей из БД с отклонением от среднемесячного значения долготы ПСТ
+    t0 = perf_counter()
     export_to_excel(output_file_path=name_output_xlsx_file)
+    logger.info("Exported to Excel in %fs", perf_counter() - t0)
 
-    # итоговое время работы скрипта
-    logger.info('Total time: %f', time.perf_counter() - time_start)  # 50.50
+
+def main():
+    # стартовое время
+    time_start = perf_counter()
+
+    # конфигурация логирования проекта
+    setup_logging(LOG_LEVEL)
+    logger.info('Application started')
+
+    # создаем директорию с сегодняшней датой в формате data/YYYY/MM/DD
+    output_dir = get_output_dir(base_dir='data', nested=True)
+
+    try:
+        # запускаем пайплайн
+        run_pipeline(GEO_URL,
+                     output_dir,
+                     OBSERVER['observer_lat'],
+                     OBSERVER['observer_lon'],
+                     out_filename='active_geo_satellites')
+
+        logger.info("Pipeline finished successfully! Total time: %fs", perf_counter() - time_start)
+        # возврат exit code операционной системе
+        return 0
+
+    except Exception:
+        logger.exception('Pipeline failed at %fs', perf_counter() - time_start)
+        return 1
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

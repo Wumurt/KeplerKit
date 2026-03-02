@@ -7,12 +7,13 @@ from sqlalchemy.orm import selectinload
 from src.database import SessionLocal
 from src.models import Calculation
 from datetime import timedelta
+from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-def export_to_excel(output_file_path: str):
+def export_to_excel(output_file_path: str | Path):
     with SessionLocal() as session:
         # 1) последние расчёты по каждому ИСЗ
         latest_subq = (
