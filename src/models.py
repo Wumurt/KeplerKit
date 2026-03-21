@@ -38,5 +38,4 @@ class Calculation(Base):
     satellite = relationship("Satellite", back_populates="calculations")
 
 
-# print(f'{__name__} completed')
 logger.info('Models created. %s completed', __name__)

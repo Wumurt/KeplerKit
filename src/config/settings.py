@@ -4,7 +4,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()  # Загружаем из .env
+# Загружаем из .env
+load_dotenv()
 
 # уровень логирования или default
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
