@@ -69,7 +69,7 @@ def parser(page_url: str, name_output_file: str | Path, missing_ids_file: str | 
                 missing_tles.append(f"{name}\n{tle}\n")
                 logger.info('[+] Добавлен NORAD %s — %s с N2YO', norad_id, name)
             except Exception as e:
-                logger.exception('NORAD %d — ошибка при получении с N2YO: %s', norad_id, e)
+                logger.exception('NORAD %s — ошибка при получении с N2YO: %s', norad_id, e)
         # дозаписываем собранные данные
         if missing_tles:
             with open(name_output_file, 'a') as f:
