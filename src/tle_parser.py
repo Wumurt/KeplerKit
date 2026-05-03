@@ -54,24 +54,27 @@ def parser(page_url: str, name_output_file: str | Path, missing_ids_file: str | 
     logger.debug('Извлечено %d NORAD ID из Celestrak', len(existing_ids))
 
     # 3. Если есть список пропущенных — проверяем и дополняем
-    if missing_ids_file:
-        with open(missing_ids_file, 'r') as rfile:
-            missing_ids = [line.split()[0] for line in rfile.read().strip().splitlines()]
-            logger.debug('Считано id_norad %d, missing_ids: %s', len(missing_ids), missing_ids)
+    try:
+        if missing_ids_file:
+            with open(missing_ids_file, 'r') as rfile:
+                missing_ids = [line.split()[0] for line in rfile.read().strip().splitlines()]
+                logger.debug('Считано id_norad %d, missing_ids: %s', len(missing_ids), missing_ids)
 
-        missing_tles = []  # собираем в память строки для дозаписи
-        for norad_id in missing_ids:
-            if int(norad_id) in existing_ids:
-                logger.info('[SKIP] NORAD %s уже есть в файле %s — пропускаем', norad_id, name_output_file)
-                continue
-            try:
-                name, tle = get_tle_from_n2yo(norad_id)
-                missing_tles.append(f"{name}\n{tle}\n")
-                logger.info('[+] Добавлен NORAD %s — %s с N2YO', norad_id, name)
-            except Exception as e:
-                logger.exception('NORAD %s — ошибка при получении с N2YO: %s', norad_id, e)
-        # дозаписываем собранные данные
-        if missing_tles:
-            with open(name_output_file, 'a') as f:
-                f.writelines(missing_tles)
-            logger.info('Записано %d ИСЗ с N2YO в %s', len(missing_tles), name_output_file)
+            missing_tles = []  # собираем в память строки для дозаписи
+            for norad_id in missing_ids:
+                if int(norad_id) in existing_ids:
+                    logger.info('[SKIP] NORAD %s уже есть в файле %s — пропускаем', norad_id, name_output_file)
+                    continue
+                try:
+                    name, tle = get_tle_from_n2yo(norad_id)
+                    missing_tles.append(f"{name}\n{tle}\n")
+                    logger.info('[+] Добавлен NORAD %s — %s с N2YO', norad_id, name)
+                except Exception as e:
+                    logger.exception('NORAD %s — ошибка при получении с N2YO: %s', norad_id, e)
+            # дозаписываем собранные данные
+            if missing_tles:
+                with open(name_output_file, 'a') as f:
+                    f.writelines(missing_tles)
+                logger.info('Записано %d ИСЗ с N2YO в %s', len(missing_tles), name_output_file)
+    except FileNotFoundError as e:
+        logger.critical('Файл %s не найден', missing_ids_file)
