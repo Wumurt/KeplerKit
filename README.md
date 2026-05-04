@@ -15,6 +15,8 @@ TLE-данных геостационарных спутников с после
 
 ## ⚙️ Установка
 
+Протестировано на Puthon 3.12+
+
 ``` bash
 git clone https://github.com/Wumurt/KeplerKit.git
 cd KeplerKit
